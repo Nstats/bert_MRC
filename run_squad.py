@@ -1264,9 +1264,11 @@ def main(_):
     # steps.
 
     ckpt_step_list = [num_train_steps]
-    ckpt_step = int(num_train_steps/FLAGS.save_checkpoints_steps)*FLAGS.save_checkpoints_steps
+    ckpt_step = max(0, int(num_train_steps/FLAGS.save_checkpoints_steps))*FLAGS.save_checkpoints_steps
     for i in range(FLAGS.ckpt_saved_times-1):
-        ckpt_step_list.append(ckpt_step-FLAGS.save_checkpoints_steps*i)
+        step = ckpt_step-FLAGS.save_checkpoints_steps*i
+        if step >= 0:
+            ckpt_step_list.append(step)
     ckpt_step_list.reverse()
     print('ckpt_step_list = ', ckpt_step_list)
 
