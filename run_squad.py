@@ -587,8 +587,8 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
   unstacked_logits = tf.unstack(logits, axis=0)
 
   (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
-
-  return (start_logits, end_logits)
+  no_answer_score = 0
+  return (start_logits, end_logits, no_answer_score)
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
@@ -612,7 +612,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-    (start_logits, end_logits) = create_model(
+    (start_logits, end_logits, no_answer_score) = create_model(
         bert_config=bert_config,
         is_training=is_training,
         input_ids=input_ids,
