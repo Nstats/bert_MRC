@@ -431,29 +431,29 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
         start_position = 0
         end_position = 0
 
-      if example_index < 2:
+      if example_index < 1:
         tf.logging.info("*** Example ***")
         tf.logging.info("unique_id: %s" % (unique_id))
-        tf.logging.info("example_index: %s" % (example_index))
-        tf.logging.info("doc_span_index: %s" % (doc_span_index))
+        # tf.logging.info("example_index: %s" % (example_index))
+        # tf.logging.info("doc_span_index: %s" % (doc_span_index))
         tf.logging.info("tokens: %s" % " ".join(
             [tokenization.printable_text(x) for x in tokens]))
-        tf.logging.info("token_to_orig_map: %s" % " ".join(
-            ["%d:%d" % (x, y) for (x, y) in six.iteritems(token_to_orig_map)]))
-        tf.logging.info("token_is_max_context: %s" % " ".join([
-            "%d:%s" % (x, y) for (x, y) in six.iteritems(token_is_max_context)
-        ]))
-        tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-        tf.logging.info(
-            "input_mask: %s" % " ".join([str(x) for x in input_mask]))
-        tf.logging.info(
-            "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+        # tf.logging.info("token_to_orig_map: %s" % " ".join(
+        #     ["%d:%d" % (x, y) for (x, y) in six.iteritems(token_to_orig_map)]))
+        # tf.logging.info("token_is_max_context: %s" % " ".join([
+        #     "%d:%s" % (x, y) for (x, y) in six.iteritems(token_is_max_context)
+        # ]))
+        # tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+        # tf.logging.info(
+        #     "input_mask: %s" % " ".join([str(x) for x in input_mask]))
+        # tf.logging.info(
+        #     "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
         if is_training and example.is_impossible:
           tf.logging.info("impossible example")
         if is_training and not example.is_impossible:
           answer_text = " ".join(tokens[start_position:(end_position + 1)])
-          tf.logging.info("start_position: %d" % (start_position))
-          tf.logging.info("end_position: %d" % (end_position))
+          # tf.logging.info("start_position: %d" % (start_position))
+          # tf.logging.info("end_position: %d" % (end_position))
           tf.logging.info(
               "answer: %s" % (tokenization.printable_text(answer_text)))
 
@@ -599,9 +599,11 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
     """The `model_fn` for TPUEstimator."""
 
+    '''
     tf.logging.info("*** Features ***")
     for name in sorted(features.keys()):
       tf.logging.info("  name = %s, shape = %s" % (name, features[name].shape))
+    '''
 
     unique_ids = features["unique_ids"]
     input_ids = features["input_ids"]
@@ -634,7 +636,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         scaffold_fn = tpu_scaffold
       else:
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-
+    '''
     tf.logging.info("**** Trainable Variables ****")
     for var in tvars:
       init_string = ""
@@ -642,6 +644,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         init_string = ", *INIT_FROM_CKPT*"
       tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
+    '''
 
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -1302,7 +1305,7 @@ def main(_):
 
 
 if __name__ == "__main__":
-  flags.mark_flag_as_required("vocab_file")
-  flags.mark_flag_as_required("bert_config_file")
-  flags.mark_flag_as_required("output_dir")
+  # flags.mark_flag_as_required("vocab_file")
+  # flags.mark_flag_as_required("bert_config_file")
+  # flags.mark_flag_as_required("output_dir")
   tf.app.run()
