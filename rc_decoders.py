@@ -1,4 +1,9 @@
 """
+decoders:
+    PointerNetDecoder
+    RecurrentMLPDecoder
+    NoAnswerScoreDecoder
+
 usage:
 original pointer network:
 decoder = PointerNetDecoder(hidden_size=150) # hidden_size sets to be half of len(word_vec)
@@ -167,18 +172,19 @@ class RecurrentMLPDecoder(object):
         self.hidden_size = hidden_size
         self.max_seq_len = m_s_l
 
-    def decode(self, passage_vectors):
+    def decode(self, passage_vectors, init_vec):
         """
         Use simple a recurrent MLP to compute the probabilities of each position
-        to be start and end of the answer
+        to be start and end of the answer.
         Args:
-            passage_vectors: the encoded passage vectors
+            passage_vectors: the encoded passage vectors.
+            init_vec: usually set to be pooled question_vectors.
         Returns:
-            the probs of every position to be start and end of the answer
+            the probs of every position to be start and end of the answer.
         """
         with tf.variable_scope('recurrentMLPDecoder'):
-            init_vec = tf.get_variable('init_vec', [self.max_seq_len], tf.float32,
-                                       tf.truncated_normal_initializer(), trainable=True)
+            # init_vec = tf.get_variable('init_vec', [self.max_seq_len], tf.float32,
+            #                            tf.truncated_normal_initializer(), trainable=True)
             start_vec = attend_pooling(passage_vectors, init_vec, self.hidden_size, 'start_position')
             end_vec = attend_pooling(passage_vectors, start_vec, self.hidden_size, 'end_position')
             start_prob = tf.layers.dense(start_vec, self.max_seq_len, tf.nn.softmax)

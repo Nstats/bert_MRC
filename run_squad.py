@@ -29,6 +29,7 @@ import tokenization
 import six
 import tensorflow as tf
 import time
+import rc_decoders
 
 flags = tf.flags
 
@@ -156,6 +157,10 @@ flags.DEFINE_bool(
 flags.DEFINE_float(
     "null_score_diff_threshold", 0.0,
     "If null_score - best_non_null is greater than the threshold predict null.")
+
+flags.DEFINE_string(
+    "decoder", None,
+    "MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder.")
 
 
 class SquadExample(object):
@@ -552,7 +557,7 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
-                 use_one_hot_embeddings):
+                 use_one_hot_embeddings, decoder):
   """Creates a classification model."""
   model = modeling.BertModel(
       config=bert_config,
@@ -563,37 +568,49 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       use_one_hot_embeddings=use_one_hot_embeddings)
 
   final_hidden = model.get_sequence_output()
+  final_pooled = model.get_pooled_output()  # [batch_size, hidden_size]
 
   final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
   batch_size = final_hidden_shape[0]
   seq_length = final_hidden_shape[1]
   hidden_size = final_hidden_shape[2]
 
-  output_weights = tf.get_variable(
-      "cls/squad/output_weights", [2, hidden_size],
-      initializer=tf.truncated_normal_initializer(stddev=0.02))
+  if decoder.startwith('MLP'):
+    output_weights = tf.get_variable(
+        "cls/squad/output_weights", [2, hidden_size],
+        initializer=tf.truncated_normal_initializer(stddev=0.02))
+    output_bias = tf.get_variable(
+        "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
+    final_hidden_matrix = tf.reshape(final_hidden, [batch_size * seq_length, hidden_size])
+    logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
+    logits = tf.nn.bias_add(logits, output_bias)
+    logits = tf.reshape(logits, [batch_size, seq_length, 2])
+    logits = tf.transpose(logits, [2, 0, 1])
+    unstacked_logits = tf.unstack(logits, axis=0)
+    (start_logits_, end_logits_) = (unstacked_logits[0], unstacked_logits[1])
+    no_answer_score_ = None
 
-  output_bias = tf.get_variable(
-      "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
+  elif decoder.startwith('RecurrentMLP'):
+    RecurrentMLPDecoder = rc_decoders.RecurrentMLPDecoder(hidden_size=hidden_size, m_s_l=seq_length)
+    (start_logits_, end_logits_) = RecurrentMLPDecoder.decode(final_hidden, final_pooled)
+    no_answer_score_ = None
 
-  final_hidden_matrix = tf.reshape(final_hidden,
-                                   [batch_size * seq_length, hidden_size])
-  logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
-  logits = tf.nn.bias_add(logits, output_bias)
+  elif decoder.startwith('PointerNet'):
+    (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
-  logits = tf.reshape(logits, [batch_size, seq_length, 2])
-  logits = tf.transpose(logits, [2, 0, 1])
+  elif decoder.startwith('NoAnswerScore'):
+    (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
-  unstacked_logits = tf.unstack(logits, axis=0)
+  else:
+    raise ValueError('decoder must be MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder')
 
-  (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
-  no_answer_score = 0
+  (start_logits, end_logits, no_answer_score) = (start_logits_, end_logits_, no_answer_score_)
   return (start_logits, end_logits, no_answer_score)
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
-                     use_one_hot_embeddings):
+                     use_one_hot_embeddings, decoder):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -618,7 +635,8 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         input_ids=input_ids,
         input_mask=input_mask,
         segment_ids=segment_ids,
-        use_one_hot_embeddings=use_one_hot_embeddings)
+        use_one_hot_embeddings=use_one_hot_embeddings,
+        decoder=decoder)
 
     tvars = tf.trainable_variables()
 
@@ -1181,7 +1199,8 @@ def main(_):
       num_train_steps=num_train_steps,
       num_warmup_steps=num_warmup_steps,
       use_tpu=FLAGS.use_tpu,
-      use_one_hot_embeddings=FLAGS.use_tpu)
+      use_one_hot_embeddings=FLAGS.use_tpu,
+      decoder=FLAGS.decoder)
 
   # If TPU is not available, this will fall back to normal Estimator on CPU
   # or GPU.
