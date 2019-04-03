@@ -7,10 +7,10 @@ python run_squad.py \
 --train_file=./data/squad/train-v2.0.json \
 --do_predict=True \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/original \
+--output_dir=./data/squad/RecurrentMLPDecoder \
 --train_batch_size=12 \
 --learning_rate=3e-5 \
---num_train_epochs=5 \
+--num_train_epochs=0.1 \
 --max_seq_length=300 \
 --max_query_length=30 \
 --version_2_with_negative=True \
@@ -18,7 +18,7 @@ python run_squad.py \
 --null_score_diff_threshold=0.0 \
 --ckpt_saved_times=40 \
 --save_checkpoints_steps=1000 \
---decoder='MLP'
+--decoder='RecurrentMLPDecoder'
 # MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder
 
 :<<annotation
