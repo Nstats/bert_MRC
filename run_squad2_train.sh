@@ -7,17 +7,17 @@ python run_squad.py \
 --train_file=./data/squad/train-v2.0.json \
 --do_predict=True \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/test \
+--output_dir=./data/squad/original \
 --train_batch_size=12 \
 --learning_rate=3e-5 \
---num_train_epochs=0.05 \
+--num_train_epochs=5 \
 --max_seq_length=300 \
 --max_query_length=30 \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
 --ckpt_saved_times=40 \
---save_checkpoints_steps=100
+--save_checkpoints_steps=1000
 
 :<<annotation
 annotation
