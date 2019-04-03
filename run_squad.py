@@ -575,7 +575,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
   seq_length = final_hidden_shape[1]
   hidden_size = final_hidden_shape[2]
 
-  if decoder.startwith('MLP'):
+  if decoder.startswith('MLP'):
     output_weights = tf.get_variable(
         "cls/squad/output_weights", [2, hidden_size],
         initializer=tf.truncated_normal_initializer(stddev=0.02))
@@ -590,15 +590,15 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     (start_logits_, end_logits_) = (unstacked_logits[0], unstacked_logits[1])
     no_answer_score_ = None
 
-  elif decoder.startwith('RecurrentMLP'):
+  elif decoder.startswith('RecurrentMLP'):
     RecurrentMLPDecoder = rc_decoders.RecurrentMLPDecoder(hidden_size=hidden_size, m_s_l=seq_length)
     (start_logits_, end_logits_) = RecurrentMLPDecoder.decode(final_hidden, final_pooled)
     no_answer_score_ = None
 
-  elif decoder.startwith('PointerNet'):
+  elif decoder.startswith('PointerNet'):
     (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
-  elif decoder.startwith('NoAnswerScore'):
+  elif decoder.startswith('NoAnswerScore'):
     (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
   else:
