@@ -16,7 +16,8 @@ python run_squad.py \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
---ckpt_saved_times=40
+--ckpt_saved_times=40 \
+--save_checkpoints_steps=100
 
 :<<annotation
 annotation
