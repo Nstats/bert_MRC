@@ -10,14 +10,14 @@ python run_squad.py \
 --output_dir=./data/squad/test \
 --train_batch_size=12 \
 --learning_rate=3e-5 \
---num_train_epochs=0.1 \
+--num_train_epochs=0.05 \
 --max_seq_length=300 \
 --max_query_length=30 \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
 --ckpt_saved_times=40 \
---save_checkpoints_steps=1000
+--save_checkpoints_steps=100
 
 :<<annotation
 annotation

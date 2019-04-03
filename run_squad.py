@@ -105,8 +105,8 @@ flags.DEFINE_integer("save_checkpoints_steps", 1000,
 flags.DEFINE_integer("ckpt_saved_times", 5,
                      "How many ckpt files to save.")
 
-flags.DEFINE_integer("iterations_per_loop", 1000,
-                     "How many steps to make in each estimator call.")
+# flags.DEFINE_integer("iterations_per_loop", 1000,
+#                      "How many steps to make in each estimator call.")
 
 flags.DEFINE_integer(
     "n_best_size", 20,
@@ -1155,7 +1155,7 @@ def main(_):
       save_checkpoints_steps=FLAGS.save_checkpoints_steps,
       keep_checkpoint_max=FLAGS.ckpt_saved_times,
       tpu_config=tf.contrib.tpu.TPUConfig(
-          iterations_per_loop=FLAGS.iterations_per_loop,
+          iterations_per_loop=FLAGS.save_checkpoints_steps,
           num_shards=FLAGS.num_tpu_cores,
           per_host_input_for_training=is_per_host))
 
