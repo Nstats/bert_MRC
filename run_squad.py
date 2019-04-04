@@ -233,7 +233,7 @@ class InputFeatures(object):
     self.is_impossible = is_impossible
 
 
-def read_squad_examples(input_file, is_training):
+def read_squad_examples(input_file, is_training, squad_v2=True):
   """Read a SQuAD json file into a list of SquadExample."""
   with tf.gfile.Open(input_file, "r") as reader:
     input_data = json.load(reader)["data"]
@@ -270,7 +270,7 @@ def read_squad_examples(input_file, is_training):
         is_impossible = False
         if is_training:
 
-          if FLAGS.version_2_with_negative:
+          if squad_v2:
             is_impossible = qa["is_impossible"]
           if (len(qa["answers"]) != 1) and (not is_impossible):
             raise ValueError(
@@ -1182,7 +1182,7 @@ def main(_):
   num_warmup_steps = None
   if FLAGS.do_train:
     train_examples = read_squad_examples(
-        input_file=FLAGS.train_file, is_training=True)
+        input_file=FLAGS.train_file, is_training=True, squad_v2=FLAGS.version_2_with_negative)
     num_train_steps = int(
         len(train_examples) / FLAGS.train_batch_size * FLAGS.num_train_epochs)
     num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
@@ -1248,7 +1248,7 @@ def main(_):
   if FLAGS.do_predict:
     start_time = time.time()
     eval_examples = read_squad_examples(
-        input_file=FLAGS.predict_file, is_training=False)
+        input_file=FLAGS.predict_file, is_training=False, squad_v2=FLAGS.version_2_with_negative)
 
     eval_writer = FeatureWriter(
         filename=os.path.join(FLAGS.output_dir, "eval.tf_record"),
@@ -1284,7 +1284,8 @@ def main(_):
 
     # If running eval on the TPU, you will need to specify the number of
     # steps.
-
+    '''
+    num_train_steps = 54299
     ckpt_step_list = [num_train_steps]
     ckpt_step = max(0, int(num_train_steps/FLAGS.save_checkpoints_steps))*FLAGS.save_checkpoints_steps
     for i in range(FLAGS.ckpt_saved_times-1):
@@ -1293,7 +1294,10 @@ def main(_):
             ckpt_step_list.append(step)
     ckpt_step_list.reverse()
     print('ckpt_step_list = ', ckpt_step_list)
-
+    '''
+    ckpt_step_list = [16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000,
+                      30000, 31000, 32000, 33000, 34000, 35000, 36000, 37000, 38000, 39000, 40000, 41000, 42000, 43000,
+                      44000, 45000, 46000, 47000, 48000, 49000, 50000, 51000, 52000, 53000, 54000, 54299]
     for item in ckpt_step_list:
       checkpoint_path = os.path.join(FLAGS.output_dir, 'model.ckpt-'+str(int(item)))
       all_results = []
