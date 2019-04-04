@@ -1180,7 +1180,9 @@ def main(_):
   train_examples = None
   num_train_steps = None
   num_warmup_steps = None
+
   if FLAGS.do_train:
+    start_time = time.time()
     train_examples = read_squad_examples(
         input_file=FLAGS.train_file, is_training=True, squad_v2=FLAGS.version_2_with_negative)
     num_train_steps = int(
@@ -1192,29 +1194,27 @@ def main(_):
     rng = random.Random(12345)
     rng.shuffle(train_examples)
 
-  model_fn = model_fn_builder(
-      bert_config=bert_config,
-      init_checkpoint=FLAGS.init_checkpoint,
-      learning_rate=FLAGS.learning_rate,
-      num_train_steps=num_train_steps,
-      num_warmup_steps=num_warmup_steps,
-      use_tpu=FLAGS.use_tpu,
-      use_one_hot_embeddings=FLAGS.use_tpu,
-      decoder=FLAGS.decoder)
+    model_fn = model_fn_builder(
+        bert_config=bert_config,
+        init_checkpoint=FLAGS.init_checkpoint,
+        learning_rate=FLAGS.learning_rate,
+        num_train_steps=num_train_steps,
+        num_warmup_steps=num_warmup_steps,
+        use_tpu=FLAGS.use_tpu,
+        use_one_hot_embeddings=FLAGS.use_tpu,
+        decoder=FLAGS.decoder)
 
-  # If TPU is not available, this will fall back to normal Estimator on CPU
-  # or GPU.
-  estimator = tf.contrib.tpu.TPUEstimator(
-      use_tpu=FLAGS.use_tpu,
-      model_fn=model_fn,
-      config=run_config,
-      train_batch_size=FLAGS.train_batch_size,
-      predict_batch_size=FLAGS.predict_batch_size)
+    # If TPU is not available, this will fall back to normal Estimator on CPU
+    # or GPU.
+    estimator = tf.contrib.tpu.TPUEstimator(
+        use_tpu=FLAGS.use_tpu,
+        model_fn=model_fn,
+        config=run_config,
+        train_batch_size=FLAGS.train_batch_size,
+        predict_batch_size=FLAGS.predict_batch_size)
 
-  if FLAGS.do_train:
     # We write to a temporary file to avoid storing very large constant tensors
     # in memory.
-    start_time = time.time()
     train_writer = FeatureWriter(
         filename=os.path.join(FLAGS.output_dir, "train.tf_record"),
         is_training=True)
@@ -1274,8 +1274,6 @@ def main(_):
     tf.logging.info("  Num split examples = %d", len(eval_features))
     tf.logging.info("  Batch size = %d", FLAGS.predict_batch_size)
 
-    all_results = []
-
     predict_input_fn = input_fn_builder(
         input_file=eval_writer.filename,
         seq_length=FLAGS.max_seq_length,
@@ -1284,8 +1282,13 @@ def main(_):
 
     # If running eval on the TPU, you will need to specify the number of
     # steps.
-    '''
-    num_train_steps = 54299
+
+    train_examples = read_squad_examples(
+        input_file=FLAGS.train_file, is_training=True, squad_v2=FLAGS.version_2_with_negative)
+    num_train_steps = int(
+        len(train_examples) / FLAGS.train_batch_size * FLAGS.num_train_epochs)
+    num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
+
     ckpt_step_list = [num_train_steps]
     ckpt_step = max(0, int(num_train_steps/FLAGS.save_checkpoints_steps))*FLAGS.save_checkpoints_steps
     for i in range(FLAGS.ckpt_saved_times-1):
@@ -1294,15 +1297,28 @@ def main(_):
             ckpt_step_list.append(step)
     ckpt_step_list.reverse()
     print('ckpt_step_list = ', ckpt_step_list)
-    '''
-    ckpt_step_list = [16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000,
-                      30000, 31000, 32000, 33000, 34000, 35000, 36000, 37000, 38000, 39000, 40000, 41000, 42000, 43000,
-                      44000, 45000, 46000, 47000, 48000, 49000, 50000, 51000, 52000, 53000, 54000, 54299]
+    del train_examples
+
     for item in ckpt_step_list:
       checkpoint_path = os.path.join(FLAGS.output_dir, 'model.ckpt-'+str(int(item)))
+      model_fn_pred = model_fn_builder(
+          bert_config=bert_config,
+          init_checkpoint=checkpoint_path,
+          learning_rate=FLAGS.learning_rate,
+          num_train_steps=num_train_steps,
+          num_warmup_steps=num_warmup_steps,
+          use_tpu=FLAGS.use_tpu,
+          use_one_hot_embeddings=FLAGS.use_tpu,
+          decoder=FLAGS.decoder)
+      estimator_pred = tf.contrib.tpu.TPUEstimator(
+          use_tpu=FLAGS.use_tpu,
+          model_fn=model_fn_pred,
+          config=run_config,
+          train_batch_size=FLAGS.train_batch_size,
+          predict_batch_size=FLAGS.predict_batch_size)
       all_results = []
-      for result in estimator.predict(
-          predict_input_fn, checkpoint_path=checkpoint_path,  yield_single_examples=True):
+      for result in estimator_pred.predict(
+          predict_input_fn, yield_single_examples=True):
         if len(all_results) % 1000 == 0:
           tf.logging.info("Processing example: %d" % (len(all_results)))
         unique_id = int(result["unique_ids"])
@@ -1322,6 +1338,7 @@ def main(_):
                         FLAGS.n_best_size, FLAGS.max_answer_length,
                         FLAGS.do_lower_case, output_prediction_file,
                         output_nbest_file, output_null_log_odds_file)
+
     time_file = os.path.join(FLAGS.output_dir, 'training_time.txt')
     with open(time_file, 'a', encoding='utf-8') as f:
         f.write('predicting time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
