@@ -12,6 +12,7 @@ start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 
 import tensorflow as tf
 import tensorflow.contrib as tc
+import sys
 
 
 def custom_dynamic_rnn(cell, inputs, inputs_len, initial_state=None):
@@ -230,17 +231,17 @@ class NoAnswerScoreDecoder(PointerNetDecoder):
 
 
 if __name__ == '__main__':
-    batch_size = 8
-    max_p_l = 500
-    word_vec_len = 300
+    batch_size = sys.argv[1]
+    max_p_l = sys.argv[2]
+    word_vec_len = sys.argv[3]
     pq_encodes = tf.get_variable('pq_encodes', [batch_size, max_p_l, word_vec_len], tf.float32,
                                  tf.random_normal_initializer)
-    q_encodes = tf.get_variable('p_encodes', [batch_size, max_p_l, word_vec_len], tf.float32,
+    q_encodes = tf.get_variable('p_encodes', [batch_size, word_vec_len], tf.float32,
                                 tf.random_normal_initializer)
-    decoder = PointerNetDecoder(hidden_size=150)
+    decoder = RecurrentMLPDecoder(hidden_size=150, m_s_l=max_p_l)
     start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         print(sess.run(start_probs))
-        print('start_probs.get_shape() = ', start_probs.get_shape())
+        print('start_probs.get_shape().as_list() = ', start_probs.get_shape().as_list())

@@ -81,9 +81,9 @@ flags.DEFINE_integer(
     "The maximum number of tokens for the question. Questions longer than "
     "this will be truncated to this length.")
 
-flags.DEFINE_bool("do_train", False, "Whether to run training.")
+flags.DEFINE_bool("do_train", True, "Whether to run training.")
 
-flags.DEFINE_bool("do_predict", False, "Whether to run eval on the dev set.")
+flags.DEFINE_bool("do_predict", True, "Whether to run eval on the dev set.")
 
 flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
@@ -102,6 +102,8 @@ flags.DEFINE_float(
 
 flags.DEFINE_integer("save_checkpoints_steps", 1000,
                      "How often to save the model checkpoint.")
+
+flags.DEFINE_integer("predic_steps", 1000, "Steps between 2 prediction.")
 
 flags.DEFINE_integer("ckpt_saved_times", 5,
                      "How many ckpt files to save.")
@@ -1239,11 +1241,72 @@ def main(_):
         seq_length=FLAGS.max_seq_length,
         is_training=True,
         drop_remainder=True)
-    estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
+
+    eval_examples = read_squad_examples(
+        input_file=FLAGS.predict_file, is_training=False, squad_v2=FLAGS.version_2_with_negative)
+    eval_writer = FeatureWriter(
+        filename=os.path.join(FLAGS.output_dir, "eval.tf_record"),
+        is_training=False)
+    eval_features = []
+
+    def append_feature(feature):
+        eval_features.append(feature)
+        eval_writer.process_feature(feature)
+    convert_examples_to_features(
+        examples=eval_examples,
+        tokenizer=tokenizer,
+        max_seq_length=FLAGS.max_seq_length,
+        doc_stride=FLAGS.doc_stride,
+        max_query_length=FLAGS.max_query_length,
+        is_training=False,
+        output_fn=append_feature)
+    eval_writer.close()
+
+    tf.logging.info("***** Eval set info *****")
+    tf.logging.info("  Num eval examples = %d", len(eval_examples))
+    tf.logging.info("  Num split examples = %d", len(eval_features))
+    tf.logging.info("  Batch size = %d", FLAGS.predict_batch_size)
+
+    predict_input_fn = input_fn_builder(
+        input_file=eval_writer.filename,
+        seq_length=FLAGS.max_seq_length,
+        is_training=False,
+        drop_remainder=False)
+
+    half_num_train_steps = int(num_train_steps/2)
+    estimator.train(input_fn=train_input_fn, steps=half_num_train_steps)
+
+    for step in range(int(1e10)):
+        all_results = []
+        for result in estimator.predict(predict_input_fn, yield_single_examples=True):
+            unique_id = int(result["unique_ids"])
+            start_logits = [float(x) for x in result["start_logits"].flat]
+            end_logits = [float(x) for x in result["end_logits"].flat]
+            all_results.append(
+                RawResult(
+                    unique_id=unique_id,
+                    start_logits=start_logits,
+                    end_logits=end_logits))
+
+        output_prediction_file = os.path.join(FLAGS.output_dir, str(step) + "_predictions.json")
+        output_nbest_file = os.path.join(FLAGS.output_dir, str(step) + "_nbest_predictions.json")
+        output_null_log_odds_file = os.path.join(FLAGS.output_dir, str(step) + "_null_odds.json")
+
+        write_predictions(eval_examples, eval_features, all_results,
+                          FLAGS.n_best_size, FLAGS.max_answer_length,
+                          FLAGS.do_lower_case, output_prediction_file,
+                          output_nbest_file, output_null_log_odds_file)
+
+        if half_num_train_steps+(step+1)*FLAGS.predic_steps > num_train_steps:
+            print('Finally we trained {0} steps.'.format(half_num_train_steps+step*FLAGS.predic_steps))
+            break
+        else:
+            estimator.train(input_fn=train_input_fn, steps=FLAGS.predic_steps)
+
     time_file = os.path.join(FLAGS.output_dir, 'training_time.txt')
     with open(time_file, 'w', encoding='utf-8') as f:
-        f.write('training time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
-
+        f.write('training and predicting time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
+  '''
   if FLAGS.do_predict:
     start_time = time.time()
     eval_examples = read_squad_examples(
@@ -1343,7 +1406,7 @@ def main(_):
     time_file = os.path.join(FLAGS.output_dir, 'training_time.txt')
     with open(time_file, 'a', encoding='utf-8') as f:
         f.write('predicting time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
-
+    '''
 
 if __name__ == "__main__":
   # flags.mark_flag_as_required("vocab_file")
