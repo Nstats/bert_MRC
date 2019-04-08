@@ -1295,7 +1295,8 @@ def main(_):
         step = ckpt_step-FLAGS.save_checkpoints_steps*i
         if step > 0:
             ckpt_step_list.append(step)
-    ckpt_step_list.reverse()
+    # ckpt_step_list.reverse()
+    # ckpt_step_list = [16000]
     print('ckpt_step_list = ', ckpt_step_list)
     del train_examples
 
