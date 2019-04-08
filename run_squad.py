@@ -1296,6 +1296,7 @@ def main(_):
             ckpt_step_list.append(step)
     # ckpt_step_list.reverse()
     # ckpt_step_list = [16000]
+    ckpt_step_list = list(ckpt_step_list[0])
     print('ckpt_step_list = ', ckpt_step_list)
     del train_examples
 
