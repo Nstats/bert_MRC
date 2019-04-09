@@ -182,8 +182,8 @@ class RecurrentMLPDecoder(object):
         with tf.variable_scope('recurrentMLPDecoder'):
             # init_vec = tf.get_variable('init_vec', [self.max_seq_len], tf.float32,
             #                            tf.truncated_normal_initializer(), trainable=True)
-            start_vec = attend_pooling(passage_vectors, init_vec, self.hidden_size, 'start_position')
-            end_vec = attend_pooling(passage_vectors, start_vec, self.hidden_size, 'end_position')
+            start_vec = attend_pooling(passage_vectors, init_vec, 'start_position')
+            end_vec = attend_pooling(passage_vectors, start_vec, 'end_position')
             start_prob = tf.layers.dense(start_vec, self.max_seq_len, tf.nn.softmax)
             end_prob = tf.layers.dense(end_vec, self.max_seq_len, tf.nn.softmax)
             return start_prob, end_prob

@@ -16,7 +16,7 @@ python run_squad.py \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
 --save_checkpoints_steps=2000 \
---ckpt_saved_times=10 \
+--ckpt_saved_times=15 \
 --predic_steps=1000 \
 --decoder='RecurrentMLP'
 # MLP, RecurrentMLPDecoder, PointerNetDecoder or NoAnswerScoreDecoder
