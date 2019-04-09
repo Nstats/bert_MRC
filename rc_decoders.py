@@ -81,7 +81,6 @@ def attend_pooling(pooling_vectors, ref_vector, scope=None):
     Args:
         pooling_vectors: the vectors to pool shaped as [batch_size, p_length, word_vec_len]
         ref_vector: the reference vector shaped as [batch_size, word_vec_len]
-        hidden_size: the hidden size for attention function
         scope: score name
     Returns:
         the pooled vector
