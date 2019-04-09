@@ -612,7 +612,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
-                     use_one_hot_embeddings, decoder):
+                     use_one_hot_embeddings, decoder, log_file_dir):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -657,13 +657,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
       else:
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
-    tf.logging.info("**** Trainable Variables ****")
-    for var in tvars:
-      init_string = ""
-      if var.name in initialized_variable_names:
-        init_string = ", *INIT_FROM_CKPT*"
-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
-                      init_string)
+    if mode == tf.estimator.ModeKeys.TRAIN:
+      with open(log_file_dir, 'a', encoding='utf-8') as f:
+        f.write("**** Trainable Variables ****"+'\n')
+        for var in tvars:
+          init_string = ""
+          if var.name in initialized_variable_names:
+            init_string = "*INIT_FROM_CKPT*"
+          f.write("  name = {0}, shape = {1}, {2}".format(var.name, var.shape, init_string)+'\n')
 
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -1184,6 +1185,7 @@ def main(_):
 
   if FLAGS.do_train:
     start_time = time.time()
+    log_file = os.path.join(FLAGS.output_dir, 'log.txt')
     train_examples = read_squad_examples(
         input_file=FLAGS.train_file, is_training=True, squad_v2=FLAGS.version_2_with_negative)
     num_train_steps = int(
@@ -1203,7 +1205,8 @@ def main(_):
         num_warmup_steps=num_warmup_steps,
         use_tpu=FLAGS.use_tpu,
         use_one_hot_embeddings=FLAGS.use_tpu,
-        decoder=FLAGS.decoder)
+        decoder=FLAGS.decoder,
+        log_file_dir=log_file)
 
     # If TPU is not available, this will fall back to normal Estimator on CPU
     # or GPU.
@@ -1303,8 +1306,7 @@ def main(_):
         else:
             estimator.train(input_fn=train_input_fn, steps=FLAGS.predic_steps)
 
-    time_file = os.path.join(FLAGS.output_dir, 'training_time.txt')
-    with open(time_file, 'w', encoding='utf-8') as f:
+    with open(log_file, 'a', encoding='utf-8') as f:
         f.write('training and predicting time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
   '''
   if FLAGS.do_predict:
