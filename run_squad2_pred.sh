@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-folder_name=original
-num_prediction=22
+folder_name=RecurrentMLP
+num_prediction=5
 
 for ((i=0; i<${num_prediction}; i++)); do
     predict_dir=./data/squad/${folder_name}/${i}_predictions.json
