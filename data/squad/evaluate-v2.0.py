@@ -262,7 +262,7 @@ def main():
     histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'hasAns')
     histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'noAns')
   if OPTS.out_file:
-    with open(OPTS.out_file, 'w') as f:
+    with open(OPTS.out_file, 'a') as f:
       json.dump(out_eval, f)
   else:
     print(json.dumps(out_eval, indent=2))

@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 
-for ((i=0; i<10; i++)); do
-    echo $i
+folder_name=original
+num_prediction=22
+
+for ((i=0; i<${num_prediction}; i++)); do
+    predict_dir=./data/squad/${folder_name}/${i}_predictions.json
+    naprobfile=./data/squad/${folder_name}/${i}_null_odds.json
+    out_file=./data/squad/${folder_name}/eval.json
+    python ./data/squad/evaluate-v2.0.py './data/squad/dev-v2.0.json' ${predict_dir} --out-file ${out_file} \
+    --na-prob-file ${naprobfile}
 done
 
 :<<annotation
-python ./data/squad/evaluate-v2.0.py './data/squad/dev-v2.0.json' './data/squad/original/16000_predictions.json' \
---na-prob-file './data/squad/original/16000_null_odds.json'
-
 sorted by best f1 score:
 {
   output_layer-1,
