@@ -75,24 +75,21 @@ def custom_dynamic_rnn(cell, inputs, inputs_len, initial_state=None):
     return outputs, state
 
 
-def attend_pooling(pooling_vectors, ref_vector, hidden_size, scope=None):
+def attend_pooling(pooling_vectors, ref_vector, scope=None):
     """
     Applies attend pooling to a set of vectors according to a reference vector.
     Args:
-        pooling_vectors: the vectors to pool
-        ref_vector: the reference vector
+        pooling_vectors: the vectors to pool shaped as [batch_size, p_length, word_vec_len]
+        ref_vector: the reference vector shaped as [batch_size, word_vec_len]
         hidden_size: the hidden size for attention function
         scope: score name
     Returns:
         the pooled vector
     """
     with tf.variable_scope(scope or 'attend_pooling'):
-        U = tf.tanh(tc.layers.fully_connected(pooling_vectors, num_outputs=hidden_size,
-                                              activation_fn=None, biases_initializer=None)
-                    + tc.layers.fully_connected(tf.expand_dims(ref_vector, 1),
-                                                num_outputs=hidden_size,
-                                                activation_fn=None))
-        logits = tc.layers.fully_connected(U, num_outputs=1, activation_fn=None)
+        p_len = pooling_vectors.get_shape().as_list()[-2]
+        U = tf.tanh(pooling_vectors + tf.tile(tf.expand_dims(ref_vector, 1), [1, p_len, 1]))
+        logits = tf.layers.dense(U, 1)
         scores = tf.nn.softmax(logits, 1)
         pooled_vector = tf.reduce_sum(pooling_vectors * scores, axis=1)
     return pooled_vector
