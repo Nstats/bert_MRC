@@ -151,6 +151,7 @@ class PointerNetDecoder(object):
                     num_outputs=self.hidden_size, activation_fn=None
                 )
                 init_state = tc.rnn.LSTMStateTuple(pooled_question_rep, pooled_question_rep)
+                # init_state = tc.rnn.LSTMStateTuple(question_vectors, question_vectors)
             else:
                 init_state = None
             with tf.variable_scope('fw'):
@@ -230,11 +231,13 @@ if __name__ == '__main__':
     batch_size = sys.argv[1]
     max_p_l = sys.argv[2]
     word_vec_len = sys.argv[3]
+    hidden_size = sys.argv[4]
     pq_encodes = tf.get_variable('pq_encodes', [batch_size, max_p_l, word_vec_len], tf.float32,
                                  tf.random_normal_initializer)
     q_encodes = tf.get_variable('p_encodes', [batch_size, word_vec_len], tf.float32,
                                 tf.random_normal_initializer)
-    decoder = RecurrentMLPDecoder(hidden_size=150, m_s_l=max_p_l)
+   #  decoder = PointerNetDecoder(hidden_size)
+    decoder = RecurrentMLPDecoder(hidden_size, max_p_l)
     start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 
     with tf.Session() as sess:

@@ -598,6 +598,8 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     no_answer_score_ = None
 
   elif decoder.startswith('PointerNet'):
+    PointerNetDecoder = rc_decoders.PointerNetDecoder(hidden_size=hidden_size)
+
     (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
   elif decoder.startswith('NoAnswerScore'):
