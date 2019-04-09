@@ -116,7 +116,7 @@ class PointerNetLSTMCell(tc.rnn.LSTMCell):
             logits = tc.layers.fully_connected(U, num_outputs=1, activation_fn=None)
             scores = tf.nn.softmax(logits, 1)
             attended_context = tf.reduce_sum(self.context_to_point * scores, axis=1)
-            # attended_context = attend_pooling(self.fc_context, m_prev, self._num_units)
+            # attended_context = attend_pooling(self.fc_context, m_prev)
             lstm_out, lstm_state = super().__call__(attended_context, state)
         return tf.squeeze(scores, -1), lstm_state
 
@@ -147,7 +147,7 @@ class PointerNetDecoder(object):
                 random_attn_vector = tf.Variable(tf.random_normal([1, self.hidden_size]),
                                                  trainable=True, name="random_attn_vector")
                 pooled_question_rep = tc.layers.fully_connected(
-                    attend_pooling(question_vectors, random_attn_vector, self.hidden_size),
+                    attend_pooling(question_vectors, random_attn_vector),
                     num_outputs=self.hidden_size, activation_fn=None
                 )
                 init_state = tc.rnn.LSTMStateTuple(pooled_question_rep, pooled_question_rep)
@@ -182,8 +182,8 @@ class RecurrentMLPDecoder(object):
         with tf.variable_scope('recurrentMLPDecoder'):
             # init_vec = tf.get_variable('init_vec', [self.max_seq_len], tf.float32,
             #                            tf.truncated_normal_initializer(), trainable=True)
-            start_vec = attend_pooling(passage_vectors, init_vec, 'start_position')
-            end_vec = attend_pooling(passage_vectors, start_vec, 'end_position')
+            start_vec = attend_pooling(passage_vectors, init_vec, scope='start_position')
+            end_vec = attend_pooling(passage_vectors, start_vec, scope='end_position')
             start_prob = tf.layers.dense(start_vec, self.max_seq_len, tf.nn.softmax)
             end_prob = tf.layers.dense(end_vec, self.max_seq_len, tf.nn.softmax)
             return start_prob, end_prob
@@ -204,7 +204,7 @@ class NoAnswerScoreDecoder(PointerNetDecoder):
                 random_attn_vector = tf.Variable(tf.random_normal([1, self.hidden_size]),
                                                  trainable=True, name="random_attn_vector")
                 pooled_question_rep = tc.layers.fully_connected(
-                    attend_pooling(question_vectors, random_attn_vector, self.hidden_size),
+                    attend_pooling(question_vectors, random_attn_vector),
                     num_outputs=self.hidden_size, activation_fn=None
                 )
                 init_state = tc.rnn.LSTMStateTuple(pooled_question_rep, pooled_question_rep)
