@@ -6,7 +6,7 @@ python run_squad.py \
 --do_train=True \
 --train_file=./data/squad/train-v2.0.json \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/RecurrentMLP \
+--output_dir=./data/squad/original \
 --train_batch_size=12 \
 --learning_rate=5e-5 \
 --num_train_epochs=4 \
@@ -18,7 +18,7 @@ python run_squad.py \
 --save_checkpoints_steps=2000 \
 --ckpt_saved_times=15 \
 --predic_steps=1000 \
---decoder='RecurrentMLP'
+--decoder='MLP'
 # MLP, RecurrentMLPDecoder, PointerNetDecoder or NoAnswerScoreDecoder
 
 :<<annotation

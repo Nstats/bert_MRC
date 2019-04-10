@@ -1,5 +1,13 @@
-# BERT
-* run_squad.py
+# My_BERT Experiments
+* train model and make prediction on dev set:
+```
+sh run_squad2_train.sh
+```
+* evaluate predictions:
+```
+sh run_squad2_eval.sh
+```
+* Then you can see results in ./data/squad/folder_name/eval.json
 ---------------------------------------
 **\*\*\*\*\* New February 7th, 2019: TfHub Module \*\*\*\*\***
 
