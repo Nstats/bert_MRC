@@ -29,7 +29,7 @@ import tokenization
 import six
 import tensorflow as tf
 import time
-import rc_decoders
+import rc_decoders_v2
 
 flags = tf.flags
 
@@ -593,12 +593,12 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     no_answer_score_ = None
 
   elif decoder.startswith('RecurrentMLP'):
-    RecurrentMLPDecoder = rc_decoders.RecurrentMLPDecoder(hidden_size=hidden_size, m_s_l=seq_length)
+    RecurrentMLPDecoder = rc_decoders_v2.RecurrentMLPDecoder(hidden_size=hidden_size, m_s_l=seq_length)
     (start_logits_, end_logits_) = RecurrentMLPDecoder.decode(final_hidden, final_pooled)
     no_answer_score_ = None
 
   elif decoder.startswith('PointerNet'):
-    PointerNetDecoder = rc_decoders.PointerNetDecoder(hidden_size=hidden_size)
+    PointerNetDecoder = rc_decoders_v2.PointerNetDecoder(hidden_size=hidden_size)
 
     (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
