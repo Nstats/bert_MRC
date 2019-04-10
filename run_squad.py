@@ -570,9 +570,11 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       use_one_hot_embeddings=use_one_hot_embeddings)
 
   final_hidden = model.get_sequence_output()
+  final_hidden_square = final_hidden * final_hidden
+  final_hidden_concat = tf.concat([final_hidden, final_hidden_square], -1)
   final_pooled = model.get_pooled_output()  # [batch_size, hidden_size]
 
-  final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
+  final_hidden_shape = modeling.get_shape_list(final_hidden_concat, expected_rank=3)
   batch_size = final_hidden_shape[0]
   seq_length = final_hidden_shape[1]
   hidden_size = final_hidden_shape[2]
@@ -583,7 +585,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
         initializer=tf.truncated_normal_initializer(stddev=0.02))
     output_bias = tf.get_variable(
         "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
-    final_hidden_matrix = tf.reshape(final_hidden, [batch_size * seq_length, hidden_size])
+    final_hidden_matrix = tf.reshape(final_hidden_concat, [batch_size * seq_length, hidden_size])
     logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
     logits = tf.nn.bias_add(logits, output_bias)
     logits = tf.reshape(logits, [batch_size, seq_length, 2])
@@ -606,7 +608,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
     (start_logits_, end_logits_, no_answer_score_) = (1, 1, 1)
 
   else:
-    raise ValueError('decoder must be MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder')
+    raise ValueError('decoder must be MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder.')
 
   (start_logits, end_logits, no_answer_score) = (start_logits_, end_logits_, no_answer_score_)
   return (start_logits, end_logits, no_answer_score)

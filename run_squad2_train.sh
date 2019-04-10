@@ -6,7 +6,7 @@ python run_squad.py \
 --do_train=True \
 --train_file=./data/squad/train-v2.0.json \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/original \
+--output_dir=./data/squad/final_hidden_square \
 --train_batch_size=12 \
 --learning_rate=5e-5 \
 --num_train_epochs=4 \
