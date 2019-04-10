@@ -5,8 +5,7 @@ decoders:
     NoAnswerScoreDecoder
 
 usage:
-original pointer network:
-decoder = PointerNetDecoder(hidden_size=150) # hidden_size sets to be half of len(word_vec)
+decoder = PointerNetDecoder(hidden_size=150) # hidden_size usually sets to be half of len(word_vec)
 start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 """
 
@@ -52,7 +51,7 @@ def custom_dynamic_rnn(cell, inputs, inputs_len, initial_state=None):
         # copy through
         scores = tf.where(finished, tf.zeros_like(scores), scores)
 
-        if isinstance(cell, tc.rnn.LSTMCell):
+        if isinstance(cell, tf.nn.rnn_cell.LSTMCell):
             cur_c, cur_h = cur_state
             prev_c, prev_h = prev_s
             cur_state = tc.rnn.LSTMStateTuple(tf.where(finished, prev_c, cur_c),
@@ -94,20 +93,22 @@ def attend_pooling(pooling_vectors, ref_vector, scope=None):
     return pooled_vector
 
 
-class PointerNetLSTMCell(tc.rnn.LSTMCell):
+class PointerNetLSTMCell(tf.nn.rnn_cell.LSTMCell):
     """
     Implements the Pointer Network Cell
     """
     def __init__(self, num_units, context_to_point):
         super().__init__(num_units, state_is_tuple=True)
         self.context_to_point = context_to_point
-        self.fc_context = tc.layers.fully_connected(self.context_to_point,
-                                                    num_outputs=self._num_units,
-                                                    activation_fn=None)
+        # self.fc_context = tc.layers.fully_connected(self.context_to_point,
+        #                                             num_outputs=self._num_units,
+        #                                             activation_fn=None)
+        self.fc_context = tf.layers.dense(self.context_to_point, self._num_units)
 
-    def __call__(self, inputs, state, scope=None):
+    def call(self, inputs, state, scope=None):
         (c_prev, m_prev) = state
         with tf.variable_scope(scope or type(self).__name__):
+            '''
             U = tf.tanh(self.fc_context
                         + tf.expand_dims(tc.layers.fully_connected(m_prev,
                                                                    num_outputs=self._num_units,
@@ -116,7 +117,13 @@ class PointerNetLSTMCell(tc.rnn.LSTMCell):
             logits = tc.layers.fully_connected(U, num_outputs=1, activation_fn=None)
             scores = tf.nn.softmax(logits, 1)
             attended_context = tf.reduce_sum(self.context_to_point * scores, axis=1)
-            # attended_context = attend_pooling(self.fc_context, m_prev)
+
+            '''
+            p_len = self.fc_context.get_shape().as_list()[-2]
+            U = tf.tanh(self.fc_context + tf.tile(tf.expand_dims(m_prev, 1), [1, p_len, 1]))
+            logits = tf.layers.dense(U, 1)
+            scores = tf.nn.softmax(logits, 1)
+            attended_context = tf.reduce_sum(self.context_to_point * scores, axis=1)
             lstm_out, lstm_state = super().__call__(attended_context, state)
         return tf.squeeze(scores, -1), lstm_state
 
@@ -125,8 +132,8 @@ class PointerNetDecoder(object):
     """
     Implements the Pointer Network
     """
-    def __init__(self, hidden_size):
-        self.hidden_size = hidden_size
+    def __init__(self, h_size):
+        self.hidden_size = h_size
 
     def decode(self, passage_vectors, question_vectors, init_with_question=True):
         """
@@ -144,12 +151,16 @@ class PointerNetDecoder(object):
             fake_inputs = tf.zeros([tf.shape(passage_vectors)[0], 2, 1])  # not used
             sequence_len = tf.tile([2], [tf.shape(passage_vectors)[0]])
             if init_with_question:
-                random_attn_vector = tf.Variable(tf.random_normal([1, self.hidden_size]),
-                                                 trainable=True, name="random_attn_vector")
-                pooled_question_rep = tc.layers.fully_connected(
-                    attend_pooling(question_vectors, random_attn_vector),
-                    num_outputs=self.hidden_size, activation_fn=None
-                )
+                # random_attn_vector = tf.Variable(tf.random_normal([1, self.hidden_size]),
+                #                                  trainable=True, name="random_attn_vector")
+                random_attn_vector = tf.get_variable('random_attn_vector', [1, self.hidden_size], tf.float32,
+                                                     tf.truncated_normal_initializer())
+                # pooled_question_rep = tc.layers.fully_connected(
+                #     attend_pooling(question_vectors, random_attn_vector),
+                #     num_outputs=self.hidden_size, activation_fn=None
+                # )
+                pooled_question_rep = tf.layers.dense(attend_pooling(question_vectors, random_attn_vector),
+                                                      self.hidden_size)
                 init_state = tc.rnn.LSTMStateTuple(pooled_question_rep, pooled_question_rep)
                 # init_state = tc.rnn.LSTMStateTuple(question_vectors, question_vectors)
             else:
@@ -166,8 +177,8 @@ class PointerNetDecoder(object):
 
 
 class RecurrentMLPDecoder(object):
-    def __init__(self, hidden_size, m_s_l):
-        self.hidden_size = hidden_size
+    def __init__(self, h_s, m_s_l):
+        self.hidden_size = h_s
         self.max_seq_len = m_s_l
 
     def decode(self, passage_vectors, init_vec):
@@ -236,8 +247,8 @@ if __name__ == '__main__':
                                  tf.random_normal_initializer)
     q_encodes = tf.get_variable('p_encodes', [batch_size, word_vec_len], tf.float32,
                                 tf.random_normal_initializer)
-   #  decoder = PointerNetDecoder(hidden_size)
-    decoder = RecurrentMLPDecoder(hidden_size, max_p_l)
+    decoder = PointerNetDecoder(hidden_size)
+    # decoder = RecurrentMLPDecoder(hidden_size, max_p_l)
     start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 
     with tf.Session() as sess:
