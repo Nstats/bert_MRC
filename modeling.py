@@ -135,7 +135,11 @@ class BertModel(object):
                input_mask=None,
                token_type_ids=None,
                use_one_hot_embeddings=False,
-               scope=None):
+               scope=None,
+               use_pretrained_embed=False,
+               pretrained_embed_dir=None,
+               pretrained_embed_trainable=True
+               ):
     """Constructor for BertModel.
 
     Args:
@@ -177,7 +181,10 @@ class BertModel(object):
             embedding_size=config.hidden_size,
             initializer_range=config.initializer_range,
             word_embedding_name="word_embeddings",
-            use_one_hot_embeddings=use_one_hot_embeddings)
+            use_one_hot_embeddings=use_one_hot_embeddings,
+            use_pretrained_embed=use_pretrained_embed,
+            pretrained_embed_dir=pretrained_embed_dir,
+            pretrained_embd_trainable=pretrained_embed_trainable)
 
         # Add positional embeddings and token type embeddings, then layer
         # normalize and perform dropout.
@@ -382,7 +389,10 @@ def embedding_lookup(input_ids,
                      embedding_size=128,
                      initializer_range=0.02,
                      word_embedding_name="word_embeddings",
-                     use_one_hot_embeddings=False):
+                     use_one_hot_embeddings=False,
+                     use_pretrained_embed=False,
+                     pretrained_embed_dir=None,
+                     pretrained_embd_trainable=False):
   """Looks up words embeddings for id tensor.
 
   Args:
@@ -393,7 +403,10 @@ def embedding_lookup(input_ids,
     initializer_range: float. Embedding initialization range.
     word_embedding_name: string. Name of the embedding table.
     use_one_hot_embeddings: bool. If True, use one-hot method for word
-      embeddings. If False, use `tf.gather()`.
+      embeddings. If False, use `tf.nn.embedding_lookup()`. One hot is better
+      for TPUs.
+    use_pretrained_embed: use pretrained word embedding or not.
+    pretrained_embed_dir: the dir of pretrained word embeddings.
 
   Returns:
     float Tensor of shape [batch_size, seq_length, embedding_size].
@@ -406,17 +419,24 @@ def embedding_lookup(input_ids,
   if input_ids.shape.ndims == 2:
     input_ids = tf.expand_dims(input_ids, axis=[-1])
 
-  embedding_table = tf.get_variable(
-      name=word_embedding_name,
-      shape=[vocab_size, embedding_size],
-      initializer=create_initializer(initializer_range))
+  if use_pretrained_embed:
+    embedding_table_value = np.loadtxt(pretrained_embed_dir, np.float32, encoding='utf-8')
+    embedding_table = tf.get_variable(
+        name=word_embedding_name,
+        initializer=embedding_table_value,
+        trainable=pretrained_embd_trainable)
+  else:
+    embedding_table = tf.get_variable(
+        name=word_embedding_name,
+        shape=[vocab_size, embedding_size],
+        initializer=create_initializer(initializer_range))
 
-  flat_input_ids = tf.reshape(input_ids, [-1])
   if use_one_hot_embeddings:
+    flat_input_ids = tf.reshape(input_ids, [-1])
     one_hot_input_ids = tf.one_hot(flat_input_ids, depth=vocab_size)
     output = tf.matmul(one_hot_input_ids, embedding_table)
   else:
-    output = tf.gather(embedding_table, flat_input_ids)
+    output = tf.nn.embedding_lookup(embedding_table, input_ids)
 
   input_shape = get_shape_list(input_ids)
 

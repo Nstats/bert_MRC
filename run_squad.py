@@ -37,6 +37,10 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
+    "pretrained_embed_dir", './data/squad/word2vec_embed.txt',
+    "the dir of pretrained word embeddings.")
+
+flags.DEFINE_string(
     "bert_config_file", None,
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
@@ -164,6 +168,13 @@ flags.DEFINE_string(
     "decoder", None,
     "MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder.")
 
+flags.DEFINE_bool(
+    'use_pretrained_embed', False, 'use pretrained word2vec embedding or not.'
+)
+
+flags.DEFINE_bool(
+    'pretrained_embed_trainable', True, 'pretrained word embeeding trainable or not.'
+)
 
 class SquadExample(object):
   """A single training/test example for simple sequence classification.
@@ -559,7 +570,8 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
-                 use_one_hot_embeddings, decoder):
+                 use_one_hot_embeddings, decoder, use_pretrained_embed=False,
+                 pretrained_embed_dir=None, pretrained_embed_trainable=True):
   """Creates a classification model."""
   model = modeling.BertModel(
       config=bert_config,
@@ -567,7 +579,11 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       input_ids=input_ids,
       input_mask=input_mask,
       token_type_ids=segment_ids,
-      use_one_hot_embeddings=use_one_hot_embeddings)
+      use_one_hot_embeddings=use_one_hot_embeddings,
+      use_pretrained_embed=use_pretrained_embed,
+      pretrained_embed_dir=pretrained_embed_dir,
+      pretrained_embed_trainable=pretrained_embed_trainable
+      )
 
   final_hidden = model.get_sequence_output()
   final_hidden_square = final_hidden * final_hidden
@@ -616,7 +632,9 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
-                     use_one_hot_embeddings, decoder, log_file_dir):
+                     use_one_hot_embeddings, decoder, log_file_dir,
+                     use_pretrained_embed, pretrained_embed_dir,
+                     pretrained_embed_trainable):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -642,7 +660,11 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         input_mask=input_mask,
         segment_ids=segment_ids,
         use_one_hot_embeddings=use_one_hot_embeddings,
-        decoder=decoder)
+        decoder=decoder,
+        use_pretrained_embed=use_pretrained_embed,
+        pretrained_embed_dir=pretrained_embed_dir,
+        pretrained_embed_trainable=pretrained_embed_trainable
+        )
 
     tvars = tf.trainable_variables()
 
@@ -1210,7 +1232,10 @@ def main(_):
         use_tpu=FLAGS.use_tpu,
         use_one_hot_embeddings=FLAGS.use_tpu,
         decoder=FLAGS.decoder,
-        log_file_dir=log_file)
+        log_file_dir=log_file,
+        use_pretrained_embed=FLAGS.use_pretrained_embed,
+        pretrained_embed_dir=FLAGS.pretrained_embed_dir,
+        pretrained_embed_trainable=FLAGS.pretrained_embed_trainable)
 
     # If TPU is not available, this will fall back to normal Estimator on CPU
     # or GPU.
