@@ -1306,7 +1306,7 @@ def main(_):
         drop_remainder=False)
 
     # half_num_train_steps = int(num_train_steps/2)
-    # estimator.train(input_fn=train_input_fn, steps=half_num_train_steps)
+    estimator.train(input_fn=train_input_fn, steps=FLAGS.predict_steps)
 
     for step in range(int(1e10)):
         all_results = []
@@ -1329,8 +1329,8 @@ def main(_):
                           FLAGS.do_lower_case, output_prediction_file,
                           output_nbest_file, output_null_log_odds_file)
 
-        if (step+1)*FLAGS.predic_steps > num_train_steps:
-            print('Finally we trained {0} steps.'.format(step*FLAGS.predic_steps))
+        if (step+2)*FLAGS.predic_steps > num_train_steps:
+            print('Finally we trained {0} steps.'.format((step+1)*FLAGS.predic_steps))
             break
         else:
             estimator.train(input_fn=train_input_fn, steps=FLAGS.predic_steps)
