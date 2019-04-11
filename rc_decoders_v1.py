@@ -237,7 +237,8 @@ if __name__ == '__main__':
                                  tf.random_normal_initializer)
     q_encodes = tf.get_variable('p_encodes', [batch_size, max_p_l, word_vec_len], tf.float32,
                                 tf.random_normal_initializer)
-    decoder = PointerNetDecoder(hidden_size=3)
+    # decoder = PointerNetDecoder(hidden_size=3)
+    decoder = RecurrentMLPDecoder(3, max_p_l)
     start_probs, end_probs = decoder.decode(pq_encodes, q_encodes)
 
     with tf.Session() as sess:
