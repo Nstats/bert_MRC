@@ -6,10 +6,10 @@ python run_squad.py \
 --do_train=True \
 --train_file=./data/squad/train-v2.0.json \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/use_trainable_word2vec \
+--output_dir=./data/squad/use_untrainable_word2vec \
 --train_batch_size=12 \
 --learning_rate=5e-5 \
---num_train_epochs=3 \
+--num_train_epochs=2 \
 --max_seq_length=300 \
 --max_query_length=30 \
 --version_2_with_negative=True \
@@ -19,7 +19,7 @@ python run_squad.py \
 --ckpt_saved_times=15 \
 --predic_steps=1000 \
 --use_pretrained_embed=True \
---pretrained_embed_trainable=True \
+--pretrained_embed_trainable=False \
 --decoder='MLP'
 # MLP, RecurrentMLPDecoder, PointerNetDecoder or NoAnswerScoreDecoder
 
