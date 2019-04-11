@@ -37,7 +37,7 @@ python run_squad.py \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
---predic_steps=1000 \
+--predict_steps=1000 \
 --use_pretrained_embed=True \
 --pretrained_embed_trainable=False \
 --decoder='MLP'
@@ -59,7 +59,7 @@ python run_squad.py \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
---predic_steps=1000 \
+--predict_steps=1000 \
 --use_pretrained_embed=True \
 --pretrained_embed_trainable=True \
 --decoder='MLP'
@@ -81,7 +81,7 @@ python run_squad.py \
 --version_2_with_negative=True \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
---predic_steps=1000 \
+--predict_steps=1000 \
 --use_pretrained_embed=False \
 --pretrained_embed_trainable=False \
 --decoder='PointerNetDecoder'
