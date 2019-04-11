@@ -107,7 +107,7 @@ flags.DEFINE_float(
 flags.DEFINE_integer("save_checkpoints_steps", 1000,
                      "How often to save the model checkpoint.")
 
-flags.DEFINE_integer("predic_steps", 1000, "Steps between 2 prediction.")
+flags.DEFINE_integer("predict_steps", 1000, "Steps between 2 prediction.")
 
 flags.DEFINE_integer("ckpt_saved_times", 5,
                      "How many ckpt files to save.")
@@ -1329,11 +1329,11 @@ def main(_):
                           FLAGS.do_lower_case, output_prediction_file,
                           output_nbest_file, output_null_log_odds_file)
 
-        if (step+2)*FLAGS.predic_steps > num_train_steps:
-            print('Finally we trained {0} steps.'.format((step+1)*FLAGS.predic_steps))
+        if (step+2)*FLAGS.predict_steps > num_train_steps:
+            print('Finally we trained {0} steps.'.format((step+1)*FLAGS.predict_steps))
             break
         else:
-            estimator.train(input_fn=train_input_fn, steps=FLAGS.predic_steps)
+            estimator.train(input_fn=train_input_fn, steps=FLAGS.predict_steps)
 
     with open(log_file, 'a', encoding='utf-8') as f:
         f.write('training and predicting time used = {0}min'.format(int((time.time() - start_time) / 60)) + '\n')
