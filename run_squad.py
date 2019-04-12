@@ -684,13 +684,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
     if mode == tf.estimator.ModeKeys.TRAIN:
-      with open(log_file_dir, 'a', encoding='utf-8') as f:
-        f.write("**** Trainable Variables ****"+'\n')
-        for var in tvars:
-          init_string = ""
-          if var.name in initialized_variable_names:
-            init_string = "*INIT_FROM_CKPT*"
-          f.write("  name = {0}, shape = {1}, {2}".format(var.name, var.shape, init_string)+'\n')
+      if not os.path.exists(log_file_dir):
+        with open(log_file_dir, 'a', encoding='utf-8') as f:
+          f.write("**** Trainable Variables ****"+'\n')
+          for var in tvars:
+            init_string = ""
+            if var.name in initialized_variable_names:
+              init_string = "*INIT_FROM_CKPT*"
+            f.write("  name = {0}, shape = {1}, {2}".format(var.name, var.shape, init_string)+'\n')
 
     output_spec = None
     if mode == tf.estimator.ModeKeys.TRAIN:
