@@ -1248,22 +1248,24 @@ def main(_):
 
     # We write to a temporary file to avoid storing very large constant tensors
     # in memory.
+    train_tf_record_dir = os.path.join(FLAGS.output_dir, "train.tf_record")
     train_writer = FeatureWriter(
-        filename=os.path.join(FLAGS.output_dir, "train.tf_record"),
+        filename=train_tf_record_dir,
         is_training=True)
-    convert_examples_to_features(
-        examples=train_examples,
-        tokenizer=tokenizer,
-        max_seq_length=FLAGS.max_seq_length,
-        doc_stride=FLAGS.doc_stride,
-        max_query_length=FLAGS.max_query_length,
-        is_training=True,
-        output_fn=train_writer.process_feature)
+    if not os.path.exists(train_tf_record_dir):
+        convert_examples_to_features(
+            examples=train_examples,
+            tokenizer=tokenizer,
+            max_seq_length=FLAGS.max_seq_length,
+            doc_stride=FLAGS.doc_stride,
+            max_query_length=FLAGS.max_query_length,
+            is_training=True,
+            output_fn=train_writer.process_feature)
     train_writer.close()
 
     tf.logging.info("***** Running training *****")
     tf.logging.info("  Num orig examples = %d", len(train_examples))
-    tf.logging.info("  Num split examples = %d", train_writer.num_features)
+    # tf.logging.info("  Num split examples = %d", train_writer.num_features)
     tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
     tf.logging.info("  Num steps = %d", num_train_steps)
     del train_examples
@@ -1276,27 +1278,29 @@ def main(_):
 
     eval_examples = read_squad_examples(
         input_file=FLAGS.predict_file, is_training=False, squad_v2=FLAGS.version_2_with_negative)
+    eval_tf_record_dir = os.path.join(FLAGS.output_dir, "eval.tf_record")
     eval_writer = FeatureWriter(
-        filename=os.path.join(FLAGS.output_dir, "eval.tf_record"),
+        filename=eval_tf_record_dir,
         is_training=False)
     eval_features = []
 
     def append_feature(feature):
         eval_features.append(feature)
         eval_writer.process_feature(feature)
-    convert_examples_to_features(
-        examples=eval_examples,
-        tokenizer=tokenizer,
-        max_seq_length=FLAGS.max_seq_length,
-        doc_stride=FLAGS.doc_stride,
-        max_query_length=FLAGS.max_query_length,
-        is_training=False,
-        output_fn=append_feature)
+    if not os.path.exists(eval_tf_record_dir):
+        convert_examples_to_features(
+            examples=eval_examples,
+            tokenizer=tokenizer,
+            max_seq_length=FLAGS.max_seq_length,
+            doc_stride=FLAGS.doc_stride,
+            max_query_length=FLAGS.max_query_length,
+            is_training=False,
+            output_fn=append_feature)
     eval_writer.close()
 
     tf.logging.info("***** Eval set info *****")
     tf.logging.info("  Num eval examples = %d", len(eval_examples))
-    tf.logging.info("  Num split examples = %d", len(eval_features))
+    # tf.logging.info("  Num split examples = %d", len(eval_features))
     tf.logging.info("  Batch size = %d", FLAGS.predict_batch_size)
 
     predict_input_fn = input_fn_builder(
