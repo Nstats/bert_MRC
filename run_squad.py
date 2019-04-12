@@ -109,7 +109,7 @@ flags.DEFINE_integer("save_checkpoints_steps", 1000,
 
 flags.DEFINE_integer("predict_steps", 1000, "Steps between 2 prediction.")
 
-flags.DEFINE_integer("ckpt_saved_times", 10,
+flags.DEFINE_integer("ckpt_saved_times", 20,
                      "How many ckpt files to save.")
 
 # flags.DEFINE_integer("iterations_per_loop", 1000,
