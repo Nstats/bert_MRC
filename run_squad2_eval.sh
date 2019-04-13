@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 folder_name=use_trainable_word2vec
-num_prediction=17
+num_prediction=5
 
 for ((i=0; i<${num_prediction}; i++)); do
     predict_dir=./data/squad/${folder_name}/${i}_predictions.json
