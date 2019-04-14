@@ -182,7 +182,7 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             word_embedding_name="word_embeddings",
             use_one_hot_embeddings=use_one_hot_embeddings,
-            use_pretrained_embed=use_pretrained_embed,
+            use_pretrained_embed=False,
             pretrained_embed_dir=pretrained_embed_dir,
             pretrained_embd_trainable=pretrained_embed_trainable)
 
@@ -199,6 +199,31 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             max_position_embeddings=config.max_position_embeddings,
             dropout_prob=config.hidden_dropout_prob)
+
+        if use_pretrained_embed:
+            self.use_pretrained_embed = use_pretrained_embed
+            (self.embedding_output_word2vec, self.embedding_table_word2vec) = embedding_lookup(
+                input_ids=input_ids,
+                vocab_size=config.vocab_size,
+                embedding_size=config.hidden_size,
+                initializer_range=config.initializer_range,
+                word_embedding_name="word_embeddings_word2vec",
+                use_one_hot_embeddings=use_one_hot_embeddings,
+                use_pretrained_embed=use_pretrained_embed,
+                pretrained_embed_dir=pretrained_embed_dir,
+                pretrained_embd_trainable=pretrained_embed_trainable)
+
+            self.embedding_output_word2vec = embedding_postprocessor(
+                input_tensor=self.embedding_output_word2vec,
+                use_token_type=True,
+                token_type_ids=token_type_ids,
+                token_type_vocab_size=config.type_vocab_size,
+                token_type_embedding_name="token_type_embeddings",
+                use_position_embeddings=True,
+                position_embedding_name="position_embeddings",
+                initializer_range=config.initializer_range,
+                max_position_embeddings=config.max_position_embeddings,
+                dropout_prob=config.hidden_dropout_prob)
 
       with tf.variable_scope("encoder"):
         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
@@ -266,6 +291,12 @@ class BertModel(object):
 
   def get_embedding_table(self):
     return self.embedding_table
+
+  def get_embedding_output_word2vec(self):
+      if self.use_pretrained_embed:
+          return self.embedding_output_word2vec
+      else:
+          return 'Pretrained word2vec embeddings are not used.'
 
 
 def gelu(x):
@@ -496,7 +527,8 @@ def embedding_postprocessor(input_tensor,
     token_type_table = tf.get_variable(
         name=token_type_embedding_name,
         shape=[token_type_vocab_size, width],
-        initializer=create_initializer(initializer_range))
+        initializer=create_initializer(initializer_range),
+        reuse=tf.AUTO_REUSE)
     # This vocab will be small so we always do one-hot here, since it is always
     # faster for a small vocabulary.
     flat_token_type_ids = tf.reshape(token_type_ids, [-1])
@@ -512,7 +544,8 @@ def embedding_postprocessor(input_tensor,
       full_position_embeddings = tf.get_variable(
           name=position_embedding_name,
           shape=[max_position_embeddings, width],
-          initializer=create_initializer(initializer_range))
+          initializer=create_initializer(initializer_range),
+          reuse=tf.AUTO_REUSE)
       # Since the position embedding table is a learned variable, we create it
       # using a (long) sequence length `max_position_embeddings`. The actual
       # sequence length might be shorter than this, for faster training of

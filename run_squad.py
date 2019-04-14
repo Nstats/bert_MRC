@@ -586,8 +586,10 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       )
 
   final_hidden = model.get_sequence_output()
-  final_hidden_square = final_hidden * final_hidden
-  final_hidden_concat = tf.concat([final_hidden, final_hidden_square], -1)
+  if use_pretrained_embed:
+      final_hidden = tf.concat([final_hidden, model.get_embedding_output_word2vec()], -1)
+  # final_hidden_square = final_hidden * final_hidden
+  # final_hidden_concat = tf.concat([final_hidden, final_hidden_square], -1)
   final_pooled = model.get_pooled_output()  # [batch_size, hidden_size]
 
   final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
