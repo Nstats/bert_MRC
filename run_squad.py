@@ -598,12 +598,13 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
   hidden_size = final_hidden_shape[2]
 
   if decoder.startswith('MLP'):
+    final_hidden_ = tf.layers.dense(final_hidden, hidden_size, tf.nn.relu)
     output_weights = tf.get_variable(
         "cls/squad/output_weights", [2, hidden_size],
         initializer=tf.truncated_normal_initializer(stddev=0.02))
     output_bias = tf.get_variable(
         "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
-    final_hidden_matrix = tf.reshape(final_hidden, [batch_size * seq_length, hidden_size])
+    final_hidden_matrix = tf.reshape(final_hidden_, [batch_size * seq_length, hidden_size])
     logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
     logits = tf.nn.bias_add(logits, output_bias)
     logits = tf.reshape(logits, [batch_size, seq_length, 2])
