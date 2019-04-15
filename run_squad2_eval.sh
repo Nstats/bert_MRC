@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-folder_name=final_hidden_concat_word2vec
-num_prediction=20
+folder_name=3layerMLP
+num_prediction=14
 
 for ((i=0; i<${num_prediction}; i++)); do
     predict_dir=./data/squad/${folder_name}/${i}_predictions.json
