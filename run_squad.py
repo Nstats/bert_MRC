@@ -176,6 +176,7 @@ flags.DEFINE_bool(
     'pretrained_embed_trainable', True, 'pretrained word embeeding trainable or not.'
 )
 
+
 class SquadExample(object):
   """A single training/test example for simple sequence classification.
 
@@ -620,7 +621,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
   elif decoder.startswith('PointerNet'):
     PointerNetDecoder = rc_decoders_v1.PointerNetDecoder(hidden_size=hidden_size)
-    (start_logits_, end_logits_) = PointerNetDecoder.decode(final_hidden, final_pooled)
+    (start_logits_, end_logits_) = PointerNetDecoder.decode(final_hidden, final_hidden)
     no_answer_score_ = None
 
   elif decoder.startswith('NoAnswerScore'):
