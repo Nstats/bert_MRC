@@ -6,7 +6,7 @@ python run_squad.py \
 --do_train=True \
 --train_file=./data/squad/train-v2.0.json \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/final_hidden_concat_word2vec \
+--output_dir=./data/squad/3layerMLP \
 --train_batch_size=12 \
 --learning_rate=3e-5 \
 --num_train_epochs=2 \
@@ -16,8 +16,8 @@ python run_squad.py \
 --max_answer_length=20 \
 --null_score_diff_threshold=0.0 \
 --predict_steps=1000 \
---use_pretrained_embed=True \
---pretrained_embed_trainable=True \
+--use_pretrained_embed=False \
+--pretrained_embed_trainable=False \
 --decoder='MLP'
 # MLP, RecurrentMLPDecoder, PointerNetDecoder or NoAnswerScoreDecoder
 
