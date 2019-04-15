@@ -165,7 +165,7 @@ flags.DEFINE_float(
     "If null_score - best_non_null is greater than the threshold predict null.")
 
 flags.DEFINE_string(
-    "decoder", None,
+    "decoder", 'MLP',
     "MLP, PointerNetDecoder, RecurrentMLPDecoder or NoAnswerScoreDecoder.")
 
 flags.DEFINE_bool(

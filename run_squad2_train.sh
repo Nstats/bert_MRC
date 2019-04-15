@@ -6,7 +6,7 @@ python run_squad.py \
 --do_train=True \
 --train_file=./data/squad/train-v2.0.json \
 --predict_file=./data/squad/dev-v2.0.json \
---output_dir=./data/squad/3layerMLP \
+--output_dir=./data/squad/PointerNetDecoder \
 --train_batch_size=12 \
 --learning_rate=3e-5 \
 --num_train_epochs=2 \
@@ -18,7 +18,7 @@ python run_squad.py \
 --predict_steps=1000 \
 --use_pretrained_embed=False \
 --pretrained_embed_trainable=False \
---decoder='MLP'
+--decoder='PointerNetdecoder'
 # MLP, RecurrentMLPDecoder, PointerNetDecoder or NoAnswerScoreDecoder
 
 :<<annotation
